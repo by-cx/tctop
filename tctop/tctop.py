@@ -172,6 +172,8 @@ def main():
         head += "IP".ljust(16)
         head += "rate (bytes)".ljust(12)
         head += "rate (bits)".ljust(12)
+        head += "max".ljust(12)
+        head += "max %".ljust(7)
         head += "rate %".ljust(7)
         head += "load %".ljust(7)
         head += "pkts".ljust(8)
@@ -190,6 +192,8 @@ def main():
             buf += x["ipv4"].ljust(16)
             buf += (sizeof_fmt(x["rate_bytes"]) + "Bps").ljust(12)
             buf += (sizeof_fmt(x["rate_bytes"]*8) + "bps").ljust(12)
+            buf += (sizeof_fmt(x["max"]) + "bps").ljust(12)
+            buf += ("%.0f %%" % ((x["rate_bytes"] * 8) / x["max"] * 100)).ljust(7)
             if total_bytes: buf += ("%.0f %%" % (x["rate_bytes"] / total_bytes * 100)).ljust(7)
             else: buf += "--- %".ljust(7)
             if max_speed: buf += ("%.0f %%" % (x["rate_bytes"] / max_speed * 100)).ljust(7)
@@ -204,7 +208,7 @@ def main():
         print "Total bytes (load): %.0f %%" % (float(total_bytes) / max_speed * 100)
         print 
         print head
-        print "---------------------------------------------------------------------------------"
+        print "----------------------------------------------------------------------------------------------------"
         print "\n".join(bufs)
         sys.exit(0)
 
