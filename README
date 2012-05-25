@@ -1,0 +1,38 @@
+tctop - stats tool for tc
+=========================
+
+Experimental! It doesn't work on all systems, be patient.
+
+Usage: tctop [options]
+
+    Options:
+        -h, --help            show this help message and exit
+        -i INTERFACE, --interface=INTERFACE
+                              Network interface
+        -I INTERVAL, --interval=INTERVAL
+                              Counting interval
+        -n NUM, --num=NUM     Number of lines
+
+Result:
+
+    Total bytes: 6.1MBps | Total bits: 48.6Mbps | Total packets: 9328 pkts
+    Total bytes (load): 25 %
+
+    num. cls_id  IP              rate (bytes)rate (bits) rate % load % pkts    pkts % 
+    ---------------------------------------------------------------------------------
+    1.   1:533   10.17.249.10    377.3KBps   2.9Mbps     6 %    2 %    257     3 %    
+    2.   1:220   10.112.1.39     373.5KBps   2.9Mbps     6 %    2 %    254     3 %    
+    3.   1:452   10.16.14.28     353.8KBps   2.8Mbps     6 %    1 %    334     4 %    
+    4.   1:62    194.8.252.133   316.1KBps   2.5Mbps     5 %    1 %    216     2 %    
+    5.   1:754   10.106.1.21     301.8KBps   2.4Mbps     5 %    1 %    206     2 %    
+    6.   1:505   10.17.219.3     299.7KBps   2.3Mbps     5 %    1 %    219     2 %    
+    7.   1:894   10.105.1.29     298.7KBps   2.3Mbps     5 %    1 %    204     2 %    
+    8.   1:454   10.16.22.10     274.9KBps   2.1Mbps     4 %    1 %    214     2 %    
+    9.   1:657   10.17.211.47    271.8KBps   2.1Mbps     4 %    1 %    185     2 %    
+    10.  1:851   10.106.1.40     271.8KBps   2.1Mbps     4 %    1 %    185     2 %    
+    11.  1:78    10.17.225.7     255.7KBps   2.0Mbps     4 %    1 %    175     2 %    
+    12.  1:673   194.8.252.156   250.3KBps   2.0Mbps     4 %    1 %    197     2 %    
+    13.  1:463   10.17.217.1     237.6KBps   1.9Mbps     4 %    1 %    162     2 %    
+    14.  1:802   194.8.253.16    229.0KBps   1.8Mbps     4 %    1 %    3042    33 %   
+    15.  1:385   10.101.1.49     213.7KBps   1.7Mbps     3 %    1 %    176     2 %
+
