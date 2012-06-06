@@ -25,11 +25,13 @@ class TcParser(object):
         stdout, stderr = p.communicate()
         p.wait()
         buf = []
+        last = ""
         for line in stdout.split("\n"):
-            buf.append(line)
-            if "match" in line:
+            if ("match" in last and not "match" in line) or ("match" not in last and "match" not in line):
                 data.append("\n".join(buf))
                 buf = []
+            buf.append(line)
+            last = line
         return data
 
     def parse_filters(self):
@@ -40,13 +42,19 @@ class TcParser(object):
             res = re.search("flowid ([0-9\:]*)", item, re.S)
             if res and len(res.groups()) == 1:
                 parsed_item["class_id"] = res.groups()[0]
-            res = re.search("match ([a-f0-9\/]*)", item, re.S)
-            if res and len(res.groups()) == 1:
-                ip_a = int(res.groups()[0][0:2], 16)
-                ip_b = int(res.groups()[0][2:4], 16)
-                ip_c = int(res.groups()[0][4:6], 16)
-                ip_d = int(res.groups()[0][6:8], 16)
-                parsed_item["ipv4"] = "%d.%d.%d.%d" % (ip_a, ip_b, ip_c, ip_d)
+            res = re.findall("match ([a-f0-9\/]*)", item, re.S)
+            if len(res) == 1:
+                ip_a = int(res[0][0:2], 16)
+                ip_b = int(res[0][2:4], 16)
+                ip_c = int(res[0][4:6], 16)
+                ip_d = int(res[0][6:8], 16)
+                parsed_item["ipaddr"] = "%d.%d.%d.%d" % (ip_a, ip_b, ip_c, ip_d)
+            elif len(res) == 2:
+                ip_a = res[0][0:4]
+                ip_b = res[0][4:8]
+                ip_c = res[1][0:4]
+                ip_d = res[1][4:8]
+                parsed_item["ipaddr"] = "%s:%s:%s:%s::" % (ip_a, ip_b, ip_c, ip_d)
             else: continue
             parsed.append(parsed_item)
         return parsed
@@ -93,9 +101,9 @@ class TcParser(object):
                 continue
             tmp = filter(lambda x: x["class_id"] == parsed_item["class_id"], filters)
             if tmp:
-                parsed_item["ipv4"] = tmp[0]["ipv4"]
+                parsed_item["ipaddr"] = tmp[0]["ipaddr"]
             else:
-                parsed_item["ipv4"] = "0.0.0.0"
+                parsed_item["ipaddr"] = "0.0.0.0"
             if parsed_item:
                 parsed.append(parsed_item)
         return parsed
@@ -189,7 +197,7 @@ def main():
         for x in data:
             buf = ("%d." % i).ljust(5)
             buf += x["class_id"].ljust(8)
-            buf += x["ipv4"].ljust(16)
+            buf += x["ipaddr"].ljust(16)
             buf += (sizeof_fmt(x["rate_bytes"]) + "Bps").ljust(12)
             buf += (sizeof_fmt(x["rate_bytes"]*8) + "bps").ljust(12)
             buf += (sizeof_fmt(x["max"]) + "bps").ljust(12)
