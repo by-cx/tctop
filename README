@@ -46,3 +46,5 @@ For whole tree use:
     # watch tctop -i imq0 -I 10 -n -1
 
 There is a variable setted in source code and it can be important to you. It's speed of the upstream link. For now, just edit it in main() function, I will solve it after I decide what next.
+
+Developed for Best-Net s.r.o. and Best-Hosting s.r.o.
