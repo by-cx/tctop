@@ -80,9 +80,15 @@ class TcParser(object):
         for item in data:
             parsed_item = {}
             res = re.search("class [htbfscw]* ([0-9\:]*) parent ([0-9\:]*)", item, re.S)
+            if not res:
+                res = re.search("class [htbfscw]* ([0-9\:]*)", item, re.S)
+
             if res and len(res.groups()) == 2:
                 parsed_item["class_id"] = res.groups()[0]
                 parsed_item["parent"] = res.groups()[1]
+            elif res and len(res.groups()) == 1:
+                parsed_item["class_id"] = res.groups()[0]
+                parsed_item["parent"] = None
             else:
                 continue
             res = re.findall("([0-9MK]*)bit", item, re.S)
@@ -143,11 +149,49 @@ class TcParser(object):
         data = sorted(data, key=lambda x: x[order_by])
         return data
 
+    def get_tree(self, data=[]):
+        data = data if data else self.parse_classes()
+        tree = {}
+        roots = filter(lambda x: not x["parent"], data)
+
+        def arm(parent):
+            arm_data = {}
+            for cls in [x["class_id"] for x in data if x["parent"] == parent]:
+                arm_data[cls] = arm(cls)
+            return arm_data
+
+        for root in roots:
+            tree[root["class_id"]] = arm(root["class_id"])
+        return tree
+
+def row_head(indent=1):
+    buf = "Tree".ljust(4 + indent * 4)
+    buf += "IP".ljust(25)
+    buf += "Rate".ljust(12)
+    buf += "Max rate".ljust(12)
+    buf += "Rate%".ljust(7)
+    buf += "Total%".ljust(7)
+    buf += "Packets".ljust(7)
+    return buf
+    
+
+def row_format(cls, ip, rate, rate_packets, max_rate, total_max_rate=0, data_indent=1):
+    buf = ""
+    buf += cls.ljust(4 + data_indent * 4)
+    buf += ip.ljust(25)
+    buf += (sizeof_fmt(rate*8) + "bps").ljust(12)
+    buf += (sizeof_fmt(max_rate) + "bps").ljust(12)
+    buf += ("%.0f %%" % ((rate * 8) / max_rate * 100)).ljust(7)
+    if total_max_rate: buf += ("%.0f %%" % (rate / total_max_rate)).ljust(7)
+    else: buf += "--- %".ljust(7)
+    buf += ("%d" % rate_packets).ljust(8)
+    return buf
 
 def main():
     #for x in tc_class():
     #   print x
     parser = OptionParser()
+    parser.add_option("-t", "--tree", dest="tree", help="Network interface", action="store_true")
     parser.add_option("-i", "--interface", dest="interface", help="Network interface", metavar="INTERFACE")
     parser.add_option("-I", "--interval", dest="interval", help="Counting interval", metavar="INTERVAL")
     parser.add_option("-n", "--num", dest="num", help="Number of lines", metavar="NUM")
@@ -164,7 +208,7 @@ def main():
         num = int(options.num)
     else:
         num = 20
-    if options.interface:
+    if options.interface and not options.tree:
         tcparser = TcParser(options.interface, sleep_time)
         data = tcparser.sort_data("rate_bytes")
         data.reverse()
@@ -220,6 +264,53 @@ def main():
         print "\n".join(bufs)
         sys.exit(0)
 
+    elif options.interface and options.tree:
+        tcparser = TcParser(options.interface, sleep_time)
+        data = tcparser.sort_data("rate_bytes")
+        arms = tcparser.get_tree()
+
+        def get_lenghts(clss, nested=0):
+            lenghts = []
+            s = ""
+            for cls in clss:
+                lenghts.append(nested+1)
+                lenghts += get_lenghts(clss[cls], nested + 1)
+            return lenghts
+        lenghts = get_lenghts(arms)
+        max_indent = max(lenghts) if lenghts else 0
+
+        def get_row(cls, indent=0):
+            filtered = filter(lambda x: x["class_id"] == cls, data)
+            if len(filtered) == 1:
+                item = filtered[0]
+                s = " " * indent
+                if "ipaddr" in item and "rate_bytes" in item and "rate_packets" in item and "max" in item:
+                    s += row_format(cls, item["ipaddr"], item["rate_bytes"], item["rate_packets"], item["max"], 200000, data_indent = max_indent - indent / 4)
+                else:
+                    s += cls
+                s += "\n"
+            else:
+                s += "Parse error: %s - %s" % (cls, str(filtered))
+                s += "\n"
+            return s
+        order_by = "rate_bytes"
+        def print_arm(clss, indent=0):
+            s = ""
+            subdata = sorted(filter(lambda x: x["class_id"] in clss, data), key=lambda x: x[order_by])
+            subdata.reverse()
+            for item in subdata:
+                item["clss"] = clss[filter(lambda x: x == item["class_id"], clss)[0]]
+            for item in subdata:
+                s += get_row(item["class_id"], indent)
+                s += print_arm(item["clss"], indent + 4)
+            #for cls in subdata:
+            #    s += get_row(cls, indent)
+            #    s += print_arm(clss[cls], indent + 4)
+            return s
+        print row_head(max_indent)
+        print print_arm(arms, 0)
+
+        sys.exit(0)
     parser.print_help()
 
 if __name__ == "__main__":
